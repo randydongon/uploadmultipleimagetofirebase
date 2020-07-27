@@ -36,3 +36,57 @@
     transform: rotate(360deg);
   }
 }
+.form-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.form-group svg {
+  fill: blue;
+  width: 20px;
+  height: 20px;
+}
+
+.form-group label:hover {
+  cursor: pointer;
+}
+
+.img-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 150px;
+  height: 150px;
+  border-radius: 0.3rem;
+}
+.item-image {
+  display: flex;
+  align-items: center;
+  width: 150px;
+  height: 150px;
+  border-radius: 0.3rem;
+  margin: 0.3rem;
+}
+.item-photo {
+  margin: 0 0.1rem;
+}
+
+.btn-del {
+  position: absolute;
+  align-items: flex-end;
+  opacity: 0.5;
+  border-radius: 50%;
+}
+.btn-del:hover {
+  cursor: pointer;
+  filter: brightness(1.2);
+}
+button:focus {
+  outline: none;
+}
+
+.btn-container {
+  display: flex;
+  margin: 1rem;
+  justify-content: space-evenly;
+}
