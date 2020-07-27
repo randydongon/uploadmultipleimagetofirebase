@@ -1,126 +1,121 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ReactComponent as AddPhotoIcon } from './icons/addphotos.svg';
 import './App.css';
 import firebase from './Config';
 
-class App extends React.Component {
-  constructor(props) {
-    super(props);
+function App() {
+  let [uploadPhoto, setUploadPhoto] = useState({
+    image: null,
+    url: '',
+  })
 
-    this.ref = firebase.firestore().collection('fruits');
-    this.unsubscribe = null;
-    this.state = {
-      image: null,
-      url: '',
-      items: [],
-      key: '',
-    }
+  const [showImage, setShowImage] = useState([]);
 
-    this.handleChange = this.handleChange.bind(this);
-    this.uploadImage = this.uploadImage.bind(this);
-  }
+  useEffect(() => {
+    const ref = firebase.firestore().collection('fruits')
+    const mydata = ref.onSnapshot(onCollectData)
 
-  componentDidMount() {
-    this.unsubscribe = this.ref.onSnapshot(this.onCollectData);
-  }
-  onCollectData = (queryItems) => {
-    const items = [];
-    queryItems.forEach(item => {
-      const { url } = item.data();
+  }, ['data'])
+
+  const onCollectData = (queryData) => {
+    const items = []
+    queryData.forEach((doc) => {
+      const { url } = doc.data();
       items.push({
-        key: item.id,
-        url
+        url,
+        key: doc.id,
       })
     })
-    this.setState({ items })
+
+    setShowImage(items)
   }
 
-  uploadImage = () => {
-    const { image } = this.state;
-    const uploadPhoto = firebase.storage().ref(`fruitimage/${image.name}`).put(image);
-    uploadPhoto.on('state_changed', (snapshot) => { console.log('snapshot') }, (error) => { console.log(error) },
-      () => {
-        firebase.storage().ref('fruitimage').child(image.name).getDownloadURL().then(url => {
-          this.setState({ url });
-
-        })
-      }
-    )
-  }
-
-  handleChange = event => {
-    this.setState({
-      image: event.target.files[0],
-    });
-
-  }
-
-  saveDate = () => {
-    const { url } = this.state;
-    this.ref.add({
-      url
-    }).then(() => {
-      this.setState({
-        image: null,
-        url: ''
-      });
-    }).catch(error => {
-      console.log(error)
+  const handleChange = event => {
+    setUploadPhoto({
+      image: event.target.files[0]
     })
   }
 
-  deleteItem = (event) => {
+  const uploadImage = () => {
+    console.log('...uploading')
+    const { image } = uploadPhoto;
+    if (!image) return;
+    const uploadFile = firebase.storage().ref(`fruitimage/${image.name}`).put(image);
+    uploadFile.on('state_changed', (snapshot) => { console.log('snapshot') },
+      (error) => { console.log(error) },
+      () => {
+        firebase.storage().ref('fruitimage').child(image.name).getDownloadURL().then(url => {
+          setUploadPhoto({
+            url
+          })
+        })
+      })
+
+  }
+
+  const savePhoto = () => {
+    const myRef = firebase.firestore().collection('fruits')
+    const { url } = uploadPhoto;
+    if (!url) return;
+    myRef.add({
+      url
+    }).then(() => {
+      setUploadPhoto({
+        image: null,
+        url: '',
+      })
+      console.log('..saving')
+    }).catch(error => console.log(error))
+
+  }
+  //delete photo from firebase
+  const deleteImage = event => {
     const id = event.target.id;
     const url = event.target.value;
-
-    const deleteRef = firebase.storage().refFromURL(url);
+    const delRef = firebase.storage().refFromURL(url);
     firebase.firestore().collection('fruits').doc(id).delete().then(() => {
-      console.log('file deleted');
-    }).catch(error => { console.log(error) });
+      console.log('file deleted')
+    }).catch(error => {
+      console.log(error)
+    });
+    delRef.delete().then(() => {
+      console.log('file delete')
+    }).catch(error => console.log(error))
 
-    deleteRef.delete().then(() => {
-      console.log("file deleted")
-    }).catch(error => { console.log(error) })
   }
 
-  render() {
-    return (
-      <div className="App">
-        <h3>Upload image to firebase</h3>
-        <div className='item-image'>
-          {this.state.items.map((item) =>
-            <div key={item.key}
-              className='item-photo'
-            >
-              <button
-                id={item.key} value={item.url}
-                onClick={this.deleteItem}
-                className='btn-del'
-              >x</button>
-              <img src={item.url} alt="photoi"
-                style={{ width: '5rem', height: '5rem', }}
-                className='card-img'
-              />
-            </div>)}
-        </div>
-        <div className='form-group'>
-
-          <label htmlFor="image-item"><AddPhotoIcon /> Add Photos</label>
-          <input
-            id='image-item'
-            style={{ display: 'none' }}
-            type="file"
-            name='image-item'
-            onChange={this.handleChange}
-          />
-        </div>
-        <div className='btn-container'>
-          <button onClick={this.uploadImage}
-            className=' mx-auto'
-          >Upload photo</button>
-          <button onClick={this.saveDate}>Save</button></div>
+  return (
+    <div>
+      <div>
+        <h3>Upload multiple photos</h3>
+        <div className='img-container'>{showImage.map(item =>
+          <div key={item.key}
+            className='item-image'
+          >
+            <button
+              className='btn-del'
+              onClick={deleteImage}
+              id={item.key}
+              value={item.url}
+            >x</button>
+            <img src={item.url} alt="me" style={{ width: '5rem', height: '5rem' }} />
+          </div>)}</div>
       </div>
-    );
-  }
+      <div className='form-group'>
+        <label htmlFor="input-image"><AddPhotoIcon />Add Photos</label>
+        <input
+          type="file" id='input-image'
+          onChange={handleChange}
+          style={{ display: 'none' }}
+        />
+        <div>
+          <button onClick={uploadImage}>Upload photo</button>
+          <button onClick={savePhoto}>Save photo</button>
+        </div>
+      </div>
+
+    </div>
+  )
 }
+
 export default App;
